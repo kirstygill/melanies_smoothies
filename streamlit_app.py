@@ -1,37 +1,49 @@
 # Import python packages
 import streamlit as st
 from snowflake.snowpark.context import get_active_session
-from snowflake.snowpark.functions import col, when_matched
+from snowflake.snowpark.functions import col
 
-st.title(":cup_with_straw: Pending Smoothie Orders :cup_with_straw:")
-st.write("Orders that need to be filled.")
+# Write directly to the app
+st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
+st.write(
+    """
+    Choose the fruits you want in your custom Smoothie!
+    """
+)
+name_on_order = st.text_input('Name on Smoothie:')
+st.write('The name on your Smoothie will be: ', name_on_order)
+
 
 session = get_active_session()
 
-my_dataframe = (
-    session.table("smoothies.public.orders")
-           .filter(col("ORDER_FILLED") == 0)
+# Load only the FRUIT_NAME column
+my_dataframe = session.table("smoothies.public.fruit_options").select(col("FRUIT_NAME"))
+
+# Multiselect widget
+ingredients_list = st.multiselect(
+    'Choose up to 5 ingredients:',
+    my_dataframe
 )
 
-if my_dataframe.count() > 0:
-    editable_df = st.data_editor(my_dataframe)
-    submitted = st.button('Submit')
+# Only run logic if user selected something
+if ingredients_list:
 
-    if submitted:
-        og_dataset = session.table("smoothies.public.orders")
-        edited_dataset = session.create_dataframe(editable_df)
+    ingredients_string = ''
 
-        og_dataset.merge(
-            edited_dataset,
-            og_dataset['ORDER_UID'] == edited_dataset['ORDER_UID'],
-            [
-                when_matched().update({
-                    'ORDER_FILLED': edited_dataset['ORDER_FILLED']
-                })
-            ]
-        )
+    # Build the ingredients string
+    for fruit_chosen in ingredients_list:
+        ingredients_string += fruit_chosen + ' '
 
-        st.success("Order(s) Updated 👍")
+    # Build the INSERT statement
+    my_insert_stmt = """
+        insert into smoothies.public.orders(ingredients, name_on_order)
+        values ('""" + ingredients_string + """','""" + name_on_order + """')
+    """
 
-else:
-    st.success("There are no pending orders right now 👍")
+    # Add the submit button
+    time_to_insert = st.button('Submit Order')
+
+    # When button is clicked, run the insert
+    if time_to_insert:
+        session.sql(my_insert_stmt).collect()
+        st.success('Your Smoothie is ordered!', icon="✅")
