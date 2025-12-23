@@ -14,11 +14,15 @@ st.write("The name on your Smoothie will be:", name_on_order)
 cnx = st.connection("snowflake")
 session = cnx.session()
 
-# Load fruit options
+# Load fruit options INCLUDING SEARCH_ON
 my_dataframe = session.table(
     "smoothies.public.fruit_options"
-).select(col("FRUIT_NAME"))
+).select(
+    col("FRUIT_NAME"),
+    col("SEARCH_ON")
+)
 
+# Multiselect shows FRUIT_NAME
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
     my_dataframe
@@ -28,15 +32,17 @@ if ingredients_list:
     ingredients_string = ""
 
     for fruit_chosen in ingredients_list:
-        ingredients_string += fruit_chosen + " "
+        ingredients_string += fruit_chosen["FRUIT_NAME"] + " "
 
-        st.subheader(fruit_chosen + " Nutrition Information")
+        st.subheader(fruit_chosen["FRUIT_NAME"] + " Nutrition Information")
 
         smoothiefruit_response = requests.get(
-            "https://my.smoothiefruit.com/api/fruit/" + fruit_chosen
+            "https://my.smoothiefruit.com/api/fruit/"
+            + fruit_chosen["SEARCH_ON"]
         )
 
-        sf_df = st.dataframe(
+        # Display API results
+        st.dataframe(
             data=smoothiefruit_response.json(),
             use_container_width=True
         )
