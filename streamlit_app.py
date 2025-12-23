@@ -39,23 +39,8 @@ if ingredients_list:
         session.sql(my_insert_stmt).collect()
         st.success("Your Smoothie is ordered! ✅")
 
-# -------------------------------
-# Smoothiefruit API (SAFE)
-# -------------------------------
+# New section to display smoothiefruit nutrition information
 import requests
-
-try:
-    smoothiefruit_response = requests.get(
-        "https://my.smoothiefruit.com/api/fruit/watermelon",
-        timeout=5
-    )
-    smoothiefruit_response.raise_for_status()
-
-    st.subheader("Watermelon Nutrition")
-    st.dataframe(smoothiefruit_response.json(), use_container_width=True)
-
-except Exception:
-    st.info(
-        "⚠️ Smoothiefruit nutrition service is unavailable right now "
-        "(this is expected in the training environment)."
-    )
+smoothiefruit_response = requests.get("https://my.smoothiefruit.com/api/fruit/watermelon")
+# st.text(smoothiefruit_response.json())
+sf_df = st.dataframe(data=smoothiefruit_response.json(), use_container_width=True)
