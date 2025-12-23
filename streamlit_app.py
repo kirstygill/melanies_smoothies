@@ -43,6 +43,14 @@ if ingredients_list:
     # Add the submit button
     time_to_insert = st.button('Submit Order')
 
+# New section to display smoothiefruit nutrition information
+import requests
+smoothiefruit_response = requests.get("https://my.smoothiefruit.com/api/fruit/watermelon")
+# st.text(smoothiefruit_response.json())
+sf_df = st.dataframe(data=smoothiefruit_response.json(), use_container_width=True)
+
+
+
     # When button is clicked, run the insert
     if time_to_insert:
         session.sql(my_insert_stmt).collect()
