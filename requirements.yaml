@@ -1,15 +1,27 @@
 # Import python packages
 import streamlit as st
-from snowflake.snowpark.functions import col, when_matched
 
 st.title(":cup_with_straw: Pending Smoothie Orders :cup_with_straw:")
 st.write("Orders that need to be filled.")
 
-# ✅ Correct Snowflake connection (REPLACES get_active_session)
+# ---- Snowflake imports (guarded) ----
+try:
+    from snowflake.snowpark.functions import col, when_matched
+except ModuleNotFoundError:
+    st.error(
+        "❌ Snowflake Snowpark is not installed.\n\n"
+        "Make sure your requirements.txt contains:\n\n"
+        "• streamlit\n"
+        "• snowflake-snowpark-python",
+        icon="🚨"
+    )
+    st.stop()
+
+# ---- Snowflake connection ----
 cnx = st.connection("snowflake")
 session = cnx.session()
 
-# Get unfilled orders
+# ---- Get unfilled orders ----
 my_dataframe = (
     session.table("smoothies.public.orders")
            .filter(col("ORDER_FILLED") == 0)
@@ -18,7 +30,7 @@ my_dataframe = (
 if my_dataframe.count() > 0:
 
     editable_df = st.data_editor(my_dataframe)
-    submitted = st.button('Submit')
+    submitted = st.button("Submit")
 
     if submitted:
         og_dataset = session.table("smoothies.public.orders")
@@ -28,9 +40,9 @@ if my_dataframe.count() > 0:
             edited_dataset,
             og_dataset["ORDER_UID"] == edited_dataset["ORDER_UID"],
             [
-                when_matched().update({
-                    "ORDER_FILLED": edited_dataset["ORDER_FILLED"]
-                })
+                when_matched().update(
+                    {"ORDER_FILLED": edited_dataset["ORDER_FILLED"]}
+                )
             ]
         )
 
